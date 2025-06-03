@@ -1,0 +1,165 @@
+/* src/pages/ActivityTrackingPage.module.css */
+.activityContainer {
+  max-width: 1000px;
+  min-width: 700px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.activityContainer h2,
+.activityContainer h3,
+.activityContainer h4 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+.activityContainer h3 {
+  margin-top: 2rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+}
+
+
+.activityForm,
+.manageActivitySection {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #e0e4e8;
+  border-radius: 6px;
+  background-color: #f9fafb;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #34495e;
+  font-weight: bold;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+.input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.actionButton {
+  background-color: #27ae60; /* Green */
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.actionButton:hover {
+  background-color: #229954;
+}
+
+.actionButton:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.actionButtonsGroup {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+}
+
+.finishButton {
+    background-color: #e74c3c; /* Red */
+}
+.finishButton:hover {
+    background-color: #c0392b;
+}
+
+.restartButton {
+    background-color: #f39c12; /* Orange */
+}
+.restartButton:hover {
+    background-color: #e67e22;
+}
+
+
+.activityDetails {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #e0e4e8;
+  border-radius: 6px;
+  background-color: #fdfdfe;
+}
+
+.activityDetails h4 {
+  margin-top: 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.activityDetails p {
+  margin: 0.5rem 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.activityDetails strong {
+  color: #34495e;
+}
+
+.activityDetails a {
+    color: #3498db;
+    text-decoration: none;
+}
+.activityDetails a:hover {
+    text-decoration: underline;
+}
+
+
+.periodsList {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.periodItem {
+  background-color: #ecf0f1;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.errorMessage,
+.successMessage {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.errorMessage {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.successMessage {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}

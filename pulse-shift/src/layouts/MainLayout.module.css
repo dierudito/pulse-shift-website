@@ -1,0 +1,54 @@
+/* src/layouts/MainLayout.module.css */
+.layoutContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.navLink {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.navLink:hover,
+.navLink.active { /* You might need to use NavLink from react-router-dom for active class */
+  border-bottom: 2px solid #1abc9c;
+}
+
+.mainContent {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: #f4f6f8;
+}
+
+.footer {
+  background-color: #34495e;
+  color: #ecf0f1;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+}

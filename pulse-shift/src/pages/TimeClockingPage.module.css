@@ -1,0 +1,108 @@
+/* src/pages/TimeClockingPage.module.css */
+.timeClockingContainer {
+  max-width: 1000px;
+  min-width: 700px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.timeClockingContainer h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+}
+
+.clockDisplay {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #ecf0f1;
+  border-radius: 6px;
+}
+
+.currentTimeLabel {
+  font-size: 1rem;
+  color: #7f8c8d;
+  margin-bottom: 0.25rem;
+}
+
+.currentTimeValue {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #34495e;
+}
+
+.clockButton {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.clockButton:hover {
+  background-color: #2980b9;
+}
+
+.clockButton:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.infoSection {
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid #dde1e3;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  text-align: left;
+}
+
+.infoSection h3 {
+  color: #34495e;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.infoSection p {
+  margin: 0.5rem 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.errorMessage {
+  color: #e74c3c;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: #fbe_ae; /* Corrigir a cor se necessário */
+  border: 1px solid #e74c3c;
+  border-radius: 4px;
+}
+
+.workedDurationValue {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #27ae60; /* Um verde para destacar */
+}
+
+.liveIndicator {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: #555;
+  margin-left: 8px;
+  animation: blink 1.5s linear infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
