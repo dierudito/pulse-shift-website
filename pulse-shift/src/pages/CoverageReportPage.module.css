@@ -1,0 +1,218 @@
+.pageContainer {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  font-family: Arial, sans-serif;
+}
+
+.pageContainer h2 {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.dateFilterContainer {
+  position: relative;
+  margin-bottom: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dateRangeLabel {
+  font-weight: bold;
+  color: #34495e;
+}
+
+.dateRangeInputDisplay {
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #fff;
+  min-width: 450px;
+  text-align: center;
+}
+
+.datePickerPopup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-left: 90px;
+  z-index: 100;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background-color: #fff;
+  margin-top: 5px;
+  border-radius: 8px;
+}
+
+/* Animação de fade-in */
+.contentWrapper {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.contentWrapper.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.errorMessage {
+  color: #e74c3c;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.summaryContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.summaryCard {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summaryLabel {
+  font-size: 1rem;
+  color: #7f8c8d;
+  font-weight: bold;
+}
+
+.summaryValue {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #34495e;
+}
+
+.efficiencyBar {
+  padding: 0.5rem;
+  border-radius: 6px;
+  background-color: #e9ecef;
+  position: relative;
+  overflow: hidden;
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.efficiencyBar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--efficiency-percent);
+  background-color: var(--efficiency-color);  
+  border-radius: 6px 0 0 6px;
+  transition: width 0.7s ease-in-out, background-color 0.7s ease-in-out;
+}
+
+.efficiencyBar .summaryValue {
+  color: white;
+  position: relative;
+  z-index: 2;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.reportTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.reportTable th, .reportTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.reportTable th {
+  background-color: #f9fafb;
+}
+
+.reportTable .mainRow:hover {
+  background-color: #f7f9fa;
+}
+
+.expandButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #3498db;
+}
+
+.detailsRow {
+  animation: fadeInDetails 0.4s ease;
+}
+
+@keyframes fadeInDetails {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.detailsContent {
+  padding: 1.5rem;
+  background-color: #f9fafb;
+}
+
+.workPeriodSection {
+  margin-bottom: 1.5rem;
+}
+
+.workPeriodTitle {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e4e8;
+}
+
+.activityList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.activityItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed #e0e4e8;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityName {
+  flex-grow: 1;
+}
+
+.activityPeriod {
+  font-weight: bold;
+  margin-left: 1rem;
+  min-width: 120px;
+  text-align: right;
+}
+
+.checkIcon {
+  color: #27ae60;
+  margin-left: 0.75rem;
+}

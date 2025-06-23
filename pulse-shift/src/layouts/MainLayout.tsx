@@ -24,6 +24,7 @@ const MainLayout: React.FC<MainLayoutProps> = () => {
         <nav className={styles.nav}>
           <Link to="/" className={styles.navLink}>Registrar Ponto</Link>
           <Link to="/activities" className={styles.navLink}>Registrar Atividades</Link>
+          <Link to="/reports/coverage" className={styles.navLink}>Relatório de Cobertura</Link> {/* Novo Link */}
         </nav>
       </header>
       <main className={styles.mainContent}>

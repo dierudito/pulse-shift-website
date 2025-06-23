@@ -47,7 +47,7 @@ export interface CreateActivityPayload {
   description?: string;
   cardCode: string;
   cardLink?: string;
-  startDate: string; // ISO date string
+  startDate: string;
 }
 
 /**
@@ -55,7 +55,7 @@ export interface CreateActivityPayload {
  * @description Payload for finishing an activity period.
  */
 export interface FinishActivityPayload {
-  endDate: string; // ISO date string
+  endDate: string;
 }
 
 /**
@@ -123,4 +123,51 @@ export interface SelectOption {
   label: string; // displayName
   // You can add the full ActivitySummaryItem here if needed for direct access
   originalData?: ActivitySummaryItem;
+}
+
+/**
+ * @interface PaginatedActivityItem
+ * @description Represents a single activity item in the paginated history list.
+ */
+export interface PaginatedActivityItem {
+  $id: string;
+  id: string; // UUID of the activity
+  cardCode: string;
+  description: string | null;
+  totalWorkedHours: string; // e.g., "2,19"
+  isCurrentlyActive: boolean;
+  formattedLastOverallEndDate: string | null; // e.g., "03/06/2025 09:14"
+  // Adicione quaisquer outros campos que você possa precisar da resposta para a tabela
+}
+
+/**
+ * @interface PaginatedActivitiesData
+ * @description Represents the nested 'data' part of the paginated activities API response.
+ */
+interface PaginatedActivitiesInnerData {
+  $id: string;
+  $values: PaginatedActivityItem[];
+}
+
+/**
+ * @interface PaginatedActivitiesResponseData
+ * @description Represents the 'data' part (outer) of the paginated API response.
+ */
+export interface PaginatedActivitiesResponseData {
+  $id: string;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  totalRecords: number;
+  data: PaginatedActivitiesInnerData; // Correctly typed nested data
+}
+
+/**
+ * @interface PaginatedActivitiesApiResponse
+ * @description Represents the full API response for paginated activities.
+ */
+export interface PaginatedActivitiesApiResponse {
+  $id: string;
+  data: PaginatedActivitiesResponseData;
+  message?: string;
 }

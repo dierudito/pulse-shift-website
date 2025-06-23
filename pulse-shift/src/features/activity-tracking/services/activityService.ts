@@ -3,14 +3,17 @@ import type { ApiResponse } from '../../../types/apiTypes';
 import type {
   ActivityData,
   CreateActivityPayload,
+  StartActivityPayload,
   FinishActivityPayload,
   RestartActivityPayload,
   ActivityWorkDetails,
   ActivitySummaryItem,
-  ActivitiesSummaryApiResponse
+  ActivitiesSummaryApiResponse,
+  PaginatedActivitiesResponseData,
+  PaginatedActivitiesApiResponse,
 } from '../types/activityTypes';
 
-const API_BASE_URL = '/api/v1'; // Adjust if necessary
+const API_BASE_URL = 'http://localhost:5000/api/v1';  // Adjust if necessary
 
 /**
  * @async
@@ -135,5 +138,50 @@ export const getActivityWorkDetails = async (cardCode: string): Promise<Activity
     throw new Error(`API error: ${response.statusText} - ${errorData.message || ''}`);
   }
   const result: ApiResponse<ActivityWorkDetails> = await response.json();
+  return result.data;
+};
+
+/**
+ * @interface GetPaginatedActivitiesParams
+ * @description Parameters for fetching paginated activities.
+ */
+export interface GetPaginatedActivitiesParams {
+  filterStartDate: string; // YYYY-MM-DD
+  filterEndDate: string; // YYYY-MM-DD
+  pageNumber: number;
+  pageSize: number;
+}
+
+/**
+ * @async
+ * @function getPaginatedActivities
+ * @description Fetches a paginated list of activities based on filters.
+ * @param {GetPaginatedActivitiesParams} params - Filtering and pagination parameters.
+ * @returns {Promise<PaginatedActivitiesResponseData>} The paginated activities data.
+ * @throws Will throw an error if the API call fails.
+ */
+export const getPaginatedActivities = async (params: GetPaginatedActivitiesParams): Promise<PaginatedActivitiesResponseData> => {
+  const queryParams = new URLSearchParams({
+    filterStartDate: params.filterStartDate,
+    filterEndDate: params.filterEndDate,
+    pageNumber: String(params.pageNumber),
+    pageSize: String(params.pageSize),
+  });
+
+  const response = await fetch(`${API_BASE_URL}/activities/paginated?${queryParams.toString()}`);
+  
+  if (!response.ok) {
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      // If response is not JSON (e.g. HTML error page)
+      errorData = { message: response.statusText };
+    }
+    console.error("Get Paginated Activities API Error:", errorData);
+    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.message || 'Failed to fetch paginated activities'}`);
+  }
+  
+  const result: PaginatedActivitiesApiResponse = await response.json();
   return result.data;
 };

@@ -6,6 +6,7 @@ import MainLayout from '../layouts/MainLayout';
 // For now, using placeholders
 const TimeClockingPagePlaceholder = React.lazy(() => import('../pages/TimeClockingPage'));
 const ActivityTrackingPagePlaceholder = React.lazy(() => import('../pages/ActivityTrackingPage'));
+const CoverageReportPagePlaceholder = React.lazy(() => import('../pages/CoverageReportPage')); 
 
 
 /**
@@ -31,6 +32,14 @@ const AppRouter: React.FC = () => {
             element={
               <React.Suspense fallback={<div>Carregando Página de Atividades...</div>}>
                 <ActivityTrackingPagePlaceholder />
+              </React.Suspense>
+            }
+          />
+          <Route
+            path="reports/coverage"
+            element={
+              <React.Suspense fallback={<div>Carregando Relatório...</div>}>
+                <CoverageReportPagePlaceholder />
               </React.Suspense>
             }
           />

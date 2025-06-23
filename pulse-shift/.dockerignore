@@ -1,0 +1,18 @@
+# Dependências
+node_modules
+
+# Arquivos de build (são gerados dentro do contêiner)
+dist
+.vite
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Configurações do ambiente local
+.env.local
+.env.*.local
+
+# Git
+.git

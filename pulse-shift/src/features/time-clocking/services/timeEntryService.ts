@@ -8,7 +8,7 @@ import type {
   TimeEntry, // For the parsed result
   EntryType, } from '../types/timeEntryTypes';
 
-const API_BASE_URL = 'https://localhost:5001/api/v1'; // Adjust if necessary
+const API_BASE_URL = 'http://localhost:5000/api/v1'; // Adjust if necessary
 
 /**
  * @function parseDisplayDateString

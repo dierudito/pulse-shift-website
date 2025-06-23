@@ -1,15 +1,13 @@
-// src/pages/TimeClockingPage.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   clockTime,
   getDailySchedule,
-  getTodaysEntries, // New service
-  // getTodaysDuration, // We might not need this if calculating client-side
+  getTodaysEntries,
 } from '../features/time-clocking/services/timeEntryService';
 import type {
   ClockedTimeEntryData,
   DailySchedule,
-  TimeEntry, // Using the parsed TimeEntry
+  TimeEntry,
 } from '../features/time-clocking/types/timeEntryTypes';
 import {
   EntryType,
@@ -39,6 +37,19 @@ const formatSecondsToHHMMSS = (totalSeconds: number): string => {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
+
+/**
+ * @interface ActiveReminderInfo
+ * @description Stores information about the event for which notifications are active.
+ */
+interface ActiveReminderInfo {
+  targetTime: Date;         // Horário original agendado do evento (ex: 12:00 para breakStart)
+  eventName: string;        // Nome descritivo do evento (ex: "início de pausa (12:00)")
+  expectedEntryType: EntryType; // Tipo de registro que satisfaz este lembrete
+  lastNotificationTime: Date; // Quando a última notificação (inicial ou recorrente) foi enviada
+  isOverdue: boolean;       // Se o targetTime já passou
+}
+
 /**
  * @function TimeClockingPage
  * @description Page for users to clock in/out, view today's duration, and daily schedule.
@@ -56,6 +67,17 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+   const [activeReminder, setActiveReminder] = useState<ActiveReminderInfo | null>(null);
+ 
+  // Usaremos um único timer que será reagendado.
+  const notificationSchedulerId = useRef<NodeJS.Timeout | null>(null);
+  // Ref para manter a última versão das entradas e evitar stale closures em timeouts longos
+  const todaysEntriesRef = useRef(todaysEntries);
+  useEffect(() => {
+    todaysEntriesRef.current = todaysEntries;
+  }, [todaysEntries]);
 
   /**
    * @function formatTimeDisplay
@@ -133,20 +155,19 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
     setError(null);
     try {
       const todayStr = formatDateForAPISchedule(new Date());
-      const [schedule, entries] = await Promise.all([
-        getDailySchedule(todayStr),
-        getTodaysEntries(),
-      ]);
+      const schedule = await getDailySchedule(todayStr);
+      const entries = await getTodaysEntries();
       
       setDailySchedule(schedule);
       setTodaysEntries(entries);
-      // Initial calculation, will be updated by useEffect if working
+      
       if (entries.length > 0) {
-        setLastRegisteredEntry({ // Synthesize a ClockedTimeEntryData-like object for display
-            $id: entries[entries.length -1].$id,
-            id: entries[entries.length -1].id,
-            entryDate: entries[entries.length -1].entryDate,
-            entryType: entries[entries.length -1].entryType,
+        const lastEntry = entries[entries.length - 1];
+        setLastRegisteredEntry({
+            $id: lastEntry.$id,
+            id: lastEntry.id,
+            entryDate: lastEntry.entryDate,
+            entryType: lastEntry.entryType,
         });
       }
       // calculateWorkDuration will be called by the useEffect below
@@ -155,6 +176,18 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados da página.');
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { // Solicitar permissão
+    if (!('Notification' in window)) {
+      setNotificationPermission('denied');
+    } else if (Notification.permission === 'granted') {
+      setNotificationPermission('granted');
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(setNotificationPermission);
+    } else {
+      setNotificationPermission('denied');
     }
   }, []);
 
@@ -182,11 +215,20 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
     setIsRegistering(true);
     setError(null);
     try {
-      const newEntry = await clockTime(); // clockTime service now returns ClockedTimeEntryData
+      const newEntry = await clockTime();
       setLastRegisteredEntry(newEntry);
-      // Re-fetch all entries to update the list and trigger duration recalculation
+      
       const updatedEntries = await getTodaysEntries();
       setTodaysEntries(updatedEntries);
+
+      const todayStr = formatDateForAPISchedule(new Date());
+      const updatedSchedule = await getDailySchedule(todayStr);
+      setDailySchedule(updatedSchedule);
+      setActiveReminder(null); // Limpa qualquer lembrete ativo, pois um ponto foi batido
+      if (notificationSchedulerId.current) {
+        clearTimeout(notificationSchedulerId.current); // Limpa timer ao registrar ponto
+        notificationSchedulerId.current = null;
+      }
     } catch (err) {
       console.error("Failed to clock time:", err);
       setError(err instanceof Error ? err.message : 'Falha ao registrar ponto.');
@@ -210,6 +252,162 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
       default: return entryType;
     }
   };
+
+
+  // Helper para converter "HH:mm" para um objeto Date de hoje
+  const parseHHMMToDate = (timeStr: string): Date | null => {
+    if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return null;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0); // Define hora e minuto para hoje
+    return date;
+  };
+
+  // useEffect para agendar notificações
+  useEffect(() => {
+    if (notificationSchedulerId.current) {
+      clearTimeout(notificationSchedulerId.current);
+      notificationSchedulerId.current = null;
+    }
+
+    if (notificationPermission !== 'granted' || !dailySchedule) {
+      if(activeReminder){ // Se havia um lembrete ativo e as condições mudaram, limpa-o
+        setActiveReminder(null);
+      }
+      return;
+    }
+
+    const now = new Date(currentTime.getTime()); // Usar cópia do currentTime para estabilidade na execução do efeito
+    const currentEntries = todaysEntriesRef.current; // Usar ref para dados mais recentes nas checagens
+
+    // 1. Se existe um lembrete ativo, verificar se foi satisfeito ou expirou
+    if (activeReminder) {
+      const pointRegistered = currentEntries.find(
+        entry => entry.entryType === activeReminder.expectedEntryType &&
+                 entry.entryDate.getTime() >= activeReminder.targetTime.getTime() - 1 * 60 * 1000 // Margem de 1 min antes
+      );
+
+      if (pointRegistered) {
+        console.log(`Lembrete para ${activeReminder.eventName} satisfeito.`);
+        setActiveReminder(null);
+        return; // Ponto registrado, não precisa mais de lembretes para este evento
+      }
+
+      const oneHourPastTarget = new Date(activeReminder.targetTime.getTime() + 60 * 60 * 1000);
+      if (now > oneHourPastTarget) {
+        console.log(`Lembrete para ${activeReminder.eventName} expirou (1h).`);
+        setActiveReminder(null);
+        return; // Lembrete expirado
+      }
+
+      // Lógica para notificação recorrente
+      if (activeReminder.isOverdue) {
+        const twoMinutesMs = 2 * 60 * 1000;
+        // Se agora for >= que a última notificação + 2 minutos
+        if (now.getTime() >= activeReminder.lastNotificationTime.getTime() + twoMinutesMs) {
+          console.log(`Enviando notificação recorrente para ${activeReminder.eventName}`);
+          new Notification('Pulse Shift - Ponto Pendente!', {
+            body: `Lembrete: Registrar ${activeReminder.eventName}.`,
+            icon: '/pulse-shift-icon.png',
+            tag: `pulse-shift-recurring-${activeReminder.eventName.replace(/\s+/g, '-')}-${now.getMinutes()}` // Tag para tentar ser única
+          });
+          const newReminderState = { ...activeReminder, lastNotificationTime: now };
+          setActiveReminder(newReminderState);
+          // Reagendar a próxima verificação/recorrência (o useEffect será re-executado por causa do currentTime)
+          // Não precisa de setTimeout aqui, o useEffect com currentTime como dep cuida do re-check.
+        }
+        // Se não for hora da recorrente ainda, o useEffect será re-executado no próximo tick do currentTime.
+        return; // Mantém o activeReminder, espera o próximo tick
+      }
+    }
+
+    // 2. Determinar o próximo evento agendado para notificação inicial (se não houver lembrete ativo)
+    const sortedEntries = [...currentEntries].sort((a, b) => a.entryDate.getTime() - b.entryDate.getTime());
+    const lastEntry = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1] : null;
+
+    let nextScheduledEventTarget: ActiveReminderInfo | null = null;
+
+    const scheduleBreakStartTime = parseHHMMToDate(dailySchedule.breakStart);
+    const scheduleBreakEndTime = parseHHMMToDate(dailySchedule.breakEnd);
+    const scheduleClockOutTime = parseHHMMToDate(dailySchedule.clockOut);
+
+    if (!lastEntry) { // Nenhum ponto ainda, o primeiro alvo pode ser o breakStart (após o horário de entrada)
+      const scheduleClockInTime = parseHHMMToDate(dailySchedule.clockIn);
+      if (scheduleClockInTime && now > scheduleClockInTime && scheduleBreakStartTime && scheduleBreakStartTime > now) {
+         nextScheduledEventTarget = { targetTime: scheduleBreakStartTime, eventName: `início de pausa (${dailySchedule.breakStart})`, expectedEntryType: EntryType.BreakStart, lastNotificationTime: now, isOverdue: false };
+      }
+      // Adicionar lógica para clockOut se for o único ponto relevante do dia restante
+      else if (scheduleClockOutTime && scheduleClockOutTime > now) {
+        // Considerar se é um dia sem pausa ou se a pausa já deveria ter ocorrido
+         nextScheduledEventTarget = { targetTime: scheduleClockOutTime, eventName: `saída (${dailySchedule.clockOut})`, expectedEntryType: EntryType.ClockOut, lastNotificationTime: now, isOverdue: false };
+      }
+
+    } else {
+      if (lastEntry.entryType === EntryType.ClockIn) {
+        if (scheduleBreakStartTime && scheduleBreakStartTime > now) {
+          nextScheduledEventTarget = { targetTime: scheduleBreakStartTime, eventName: `início de pausa (${dailySchedule.breakStart})`, expectedEntryType: EntryType.BreakStart, lastNotificationTime: now, isOverdue: false };
+        } else if (scheduleBreakEndTime && scheduleBreakEndTime > now) { // Se perdeu o breakStart, pode ir pro breakEnd? Regra é notificar breakEnd
+          // Isso só ocorreria se o breakStart fosse opcional ou não registrado, e agora o próximo é breakEnd
+           nextScheduledEventTarget = { targetTime: scheduleBreakEndTime, eventName: `fim de pausa (${dailySchedule.breakEnd})`, expectedEntryType: EntryType.BreakEnd, lastNotificationTime: now, isOverdue: false };
+        }
+        else if (scheduleClockOutTime && scheduleClockOutTime > now) {
+          nextScheduledEventTarget = { targetTime: scheduleClockOutTime, eventName: `saída (${dailySchedule.clockOut})`, expectedEntryType: EntryType.ClockOut, lastNotificationTime: now, isOverdue: false };
+        }
+      } else if (lastEntry.entryType === EntryType.BreakStart) {
+        if (scheduleBreakEndTime && scheduleBreakEndTime > now) {
+          nextScheduledEventTarget = { targetTime: scheduleBreakEndTime, eventName: `fim de pausa (${dailySchedule.breakEnd})`, expectedEntryType: EntryType.BreakEnd, lastNotificationTime: now, isOverdue: false };
+        }
+      } else if (lastEntry.entryType === EntryType.BreakEnd) {
+        if (scheduleClockOutTime && scheduleClockOutTime > now) {
+          nextScheduledEventTarget = { targetTime: scheduleClockOutTime, eventName: `saída (${dailySchedule.clockOut})`, expectedEntryType: EntryType.ClockOut, lastNotificationTime: now, isOverdue: false };
+        }
+      }
+    }
+    
+    // 3. Agendar notificação inicial para o nextScheduledEventTarget
+    if (nextScheduledEventTarget && !activeReminder) { // Apenas se não houver um activeReminder
+      const initialNotificationTime = new Date(nextScheduledEventTarget.targetTime.getTime() - 2 * 60 * 1000); // 2 minutos antes
+
+      if (initialNotificationTime > now) {
+        const delay = initialNotificationTime.getTime() - now.getTime();
+        console.log(`Agendando notificação inicial para ${nextScheduledEventTarget.eventName} às ${initialNotificationTime.toLocaleTimeString('pt-BR')}`);
+        notificationSchedulerId.current = setTimeout(() => {
+          console.log(`Enviando notificação inicial para ${nextScheduledEventTarget.eventName}`);
+          new Notification('Pulse Shift - Lembrete de Ponto', {
+            body: `Seu ${nextScheduledEventTarget!.eventName} está chegando!`,
+            icon: '/pulse-shift-icon.png',
+            tag: `pulse-shift-initial-${nextScheduledEventTarget!.eventName.replace(/\s+/g, '-')}`
+          });
+          // Prepara para possível recorrência se o ponto não for batido
+          setActiveReminder({ ...nextScheduledEventTarget!, lastNotificationTime: new Date() }); // `isOverdue` ainda é false
+        }, delay);
+      } else if (now >= initialNotificationTime && now < nextScheduledEventTarget.targetTime) {
+        // Se o horário do aviso prévio (-2min) já passou, mas o horário do ponto ainda não.
+        // E não há lembrete ativo. Isso pode significar que a página carregou entre -2min e o targetTime.
+        // Envia a notificação inicial imediatamente e configura o activeReminder.
+        console.log(`Enviando notificação inicial (tardia) para ${nextScheduledEventTarget.eventName}`);
+        new Notification('Pulse Shift - Lembrete de Ponto', {
+          body: `Seu ${nextScheduledEventTarget!.eventName} está chegando!`,
+          icon: '/pulse-shift-icon.png',
+          tag: `pulse-shift-initial-late-${nextScheduledEventTarget!.eventName.replace(/\s+/g, '-')}`
+        });
+        setActiveReminder({ ...nextScheduledEventTarget!, lastNotificationTime: new Date() });
+      } else if (now >= nextScheduledEventTarget.targetTime) {
+         // Se já passou do horário do ponto e não há lembrete ativo (página carregou tarde)
+         // Iniciar diretamente o activeReminder como 'isOverdue'
+         console.log(`Ponto para ${nextScheduledEventTarget.eventName} já passou. Configurando para recorrência.`);
+         setActiveReminder({ ...nextScheduledEventTarget!, lastNotificationTime: new Date(now.getTime() - (2*60*1000) + 100 ), isOverdue: true }); // Subtrai 2 min para forçar 1a recorrente logo
+      }
+    }
+    
+    // Se um activeReminder foi definido (seja novo ou atualizado), e agora está overdue, marcar como overdue.
+    // Isso é para o caso onde a notificação inicial foi disparada, e agora o currentTime passou o targetTime.
+    if (activeReminder && !activeReminder.isOverdue && now >= activeReminder.targetTime) {
+        setActiveReminder(prev => prev ? { ...prev, isOverdue: true, lastNotificationTime: now } : null);
+    }
+
+  }, [dailySchedule, todaysEntries, notificationPermission, currentTime, activeReminder]); 
+
 
   return (
     <div className={styles.timeClockingContainer}>
@@ -261,7 +459,7 @@ const TimeClockingPage: React.FC<TimeClockingPageProps> = () => {
         </div>
       )}
 
-      {isLoading && !error && todaysEntries.length === 0 && <p>Carregando dados...</p>}
+      {isLoading && !error && todaysEntries.length === 0 && !dailySchedule && <p>Carregando dados da página...</p>}
     </div>
   );
 };
